@@ -320,5 +320,12 @@
   "DynamicRetrieval": "Dynamic Search",
   "OpenRouterModelNameInstruction": "Please enter the model identifier from OpenRouter (e.g., \"openai/gpt-4o\", \"mistralai/mistral-large-latest\"). You can check the model identifier on the OpenRouter model page.",
   "DynamicRetrievalThreshold": "Dynamic threshold",
-  "OpenRouterAPIKeyLabel": "OpenRouter API Key"
+  "OpenRouterAPIKeyLabel": "OpenRouter API Key",
+  "MultimodalUsage": "Multimodal Usage Settings",
+  "MultimodalUsageDescription": "Configure how images are used when a multimodal-capable model is selected.",
+  "MultimodalAIDecide": "AI Decides (Recommended)",
+  "MultimodalAlways": "Always Use",
+  "MultimodalNever": "Never Use",
+  "MultimodalDecisionPrompt": "AI Decision Prompt",
+  "MultimodalDecisionPromptPlaceholder": "Enter a prompt for AI to determine the necessity of multimodal input."
 }

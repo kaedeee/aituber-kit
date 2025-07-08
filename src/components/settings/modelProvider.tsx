@@ -95,6 +95,8 @@ const ModelProvider = () => {
   const maxPastMessages = settingsStore((s) => s.maxPastMessages)
   const temperature = settingsStore((s) => s.temperature)
   const maxTokens = settingsStore((s) => s.maxTokens)
+  const multimodalMode = settingsStore((s) => s.multimodalMode)
+  const multimodalDecisionPrompt = settingsStore((s) => s.multimodalDecisionPrompt)
 
   const selectAIService = settingsStore((s) => s.selectAIService)
   const selectAIModel = settingsStore((s) => s.selectAIModel)
@@ -1277,6 +1279,43 @@ const ModelProvider = () => {
           )
         }
       })()}
+      {/* Multimodal Decision Settings */}
+      {isMultiModalModel(selectAIService, selectAIModel) && (
+        <div className="my-6">
+          <div className="my-4 text-xl font-bold">{t('MultimodalUsage')}</div>
+          <div className="my-4 text-sm">{t('MultimodalUsageDescription')}</div>
+          <div className="my-2">
+            <select
+              className="px-4 py-2 w-full bg-white hover:bg-white-hover rounded-lg"
+              value={multimodalMode}
+              onChange={(e) => {
+                settingsStore.setState({
+                  multimodalMode: e.target.value as 'ai-decide' | 'always' | 'never',
+                })
+              }}
+            >
+              <option value="ai-decide">{t('MultimodalAIDecide')}</option>
+              <option value="always">{t('MultimodalAlways')}</option>
+              <option value="never">{t('MultimodalNever')}</option>
+            </select>
+          </div>
+          {multimodalMode === 'ai-decide' && (
+            <div className="my-4">
+              <div className="my-2 text-sm font-bold">{t('MultimodalDecisionPrompt')}</div>
+              <textarea
+                className="px-4 py-2 w-full h-24 bg-white hover:bg-white-hover rounded-lg text-sm"
+                value={multimodalDecisionPrompt}
+                onChange={(e) => {
+                  settingsStore.setState({
+                    multimodalDecisionPrompt: e.target.value,
+                  })
+                }}
+                placeholder={t('MultimodalDecisionPromptPlaceholder')}
+              />
+            </div>
+          )}
+        </div>
+      )}
       {selectAIService !== 'dify' && (
         <>
           <div className="my-6">

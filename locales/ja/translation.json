@@ -320,5 +320,12 @@
   "CustomAPIDescription": "注意: メッセージは自動的にリクエストボディに含まれます。ストリーミングモードでは、サーバーがtext/event-streamを返す必要があります。",
   "XAIAPIKeyLabel": "xAI APIキー",
   "OpenRouterAPIKeyLabel": "OpenRouter APIキー",
-  "OpenRouterModelNameInstruction": "OpenRouterからモデル識別子を入力してください（例： \"openai/gpt-4o\", \"mistralai/mistral-large-latest\"）。モデル識別子はOpenRouterモデルページで確認できます。"
+  "OpenRouterModelNameInstruction": "OpenRouterからモデル識別子を入力してください（例： \"openai/gpt-4o\", \"mistralai/mistral-large-latest\"）。モデル識別子はOpenRouterモデルページで確認できます。",
+  "MultimodalUsage": "マルチモーダル利用設定",
+  "MultimodalUsageDescription": "マルチモーダル対応モデルが選択されている場合の画像利用方法を設定します。",
+  "MultimodalAIDecide": "AIが判断（推奨）",
+  "MultimodalAlways": "常に利用する",
+  "MultimodalNever": "利用しない",
+  "MultimodalDecisionPrompt": "AI判断用プロンプト",
+  "MultimodalDecisionPromptPlaceholder": "AIがマルチモーダル入力の必要性を判断するためのプロンプトを入力してください。"
 }

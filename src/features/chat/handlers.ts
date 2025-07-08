@@ -660,7 +660,51 @@ export const handleSendChatFn = () => async (text: string) => {
     }
 
     homeStore.setState({ chatProcessing: true })
-    const userMessageContent: Message['content'] = modalImage
+    
+    // Multimodal decision logic
+    let shouldUseMultimodal = false
+    if (modalImage) {
+      if (ss.multimodalMode === 'always') {
+        shouldUseMultimodal = true
+      } else if (ss.multimodalMode === 'never') {
+        shouldUseMultimodal = false
+      } else if (ss.multimodalMode === 'ai-decide') {
+        try {
+          // Make AI decision about multimodal usage
+          const decisionMessages: Message[] = [
+            {
+              role: 'system',
+              content: ss.multimodalDecisionPrompt,
+            },
+            {
+              role: 'user', 
+              content: newMessage,
+            },
+          ]
+          
+          const decisionStream = await getAIChatResponseStream(decisionMessages)
+          if (decisionStream) {
+            const reader = decisionStream.getReader()
+            let decisionText = ''
+            
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              if (value) decisionText += value
+            }
+            
+            reader.releaseLock()
+            shouldUseMultimodal = decisionText.toLowerCase().includes('yes')
+          }
+        } catch (e) {
+          console.error('Multimodal decision error:', e)
+          // Default to using multimodal if decision fails
+          shouldUseMultimodal = true
+        }
+      }
+    }
+    
+    const userMessageContent: Message['content'] = (modalImage && shouldUseMultimodal)
       ? [
           { type: 'text' as const, text: newMessage },
           { type: 'image' as const, image: modalImage },

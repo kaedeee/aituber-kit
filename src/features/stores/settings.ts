@@ -188,6 +188,8 @@ interface General {
   whisperTranscriptionModel: WhisperTranscriptionModel
   initialSpeechTimeout: number
   chatLogWidth: number
+  multimodalMode: 'ai-decide' | 'always' | 'never'
+  multimodalDecisionPrompt: string
 }
 
 interface ModelType {
@@ -438,6 +440,11 @@ const settingsStore = create<SettingsState>()(
         5.0,
       chatLogWidth:
         parseFloat(process.env.NEXT_PUBLIC_CHAT_LOG_WIDTH || '400') || 400,
+      multimodalMode:
+        (process.env.NEXT_PUBLIC_MULTIMODAL_MODE as 'ai-decide' | 'always' | 'never') || 'ai-decide',
+      multimodalDecisionPrompt:
+        process.env.NEXT_PUBLIC_MULTIMODAL_DECISION_PROMPT || 
+        'この会話の内容を見て、画像を使った回答が必要かどうかを判断してください。画像が必要な場合は"YES"、不要な場合は"NO"のみを返してください。',
 
       // NijiVoice settings
       nijivoiceApiKey: '',
@@ -617,6 +624,8 @@ const settingsStore = create<SettingsState>()(
           state.includeSystemMessagesInCustomApi,
         initialSpeechTimeout: state.initialSpeechTimeout,
         chatLogWidth: state.chatLogWidth,
+        multimodalMode: state.multimodalMode,
+        multimodalDecisionPrompt: state.multimodalDecisionPrompt,
       }),
     }
   )

@@ -40,6 +40,7 @@ const useIsMobile = () => {
 export const Menu = () => {
   const selectAIService = settingsStore((s) => s.selectAIService)
   const selectAIModel = settingsStore((s) => s.selectAIModel)
+  const multimodalMode = settingsStore((s) => s.multimodalMode)
   const youtubeMode = settingsStore((s) => s.youtubeMode)
   const youtubePlaying = settingsStore((s) => s.youtubePlaying)
   const slideMode = settingsStore((s) => s.slideMode)
@@ -233,7 +234,7 @@ export const Menu = () => {
                 isMultiModalModel(
                   selectAIService as AIService,
                   selectAIModel
-                ) && (
+                ) && multimodalMode !== 'never' && (
                   <>
                     <div className="order-3">
                       <IconButton
