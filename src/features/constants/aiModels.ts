@@ -50,7 +50,15 @@ const modelDefinitions: Record<AIService, ModelInfo[]> = {
     { name: 'gemini-1.5-flash-8b', multiModal: true },
     { name: 'gemini-1.5-flash-8b-latest', multiModal: true },
   ],
-  azure: [],
+  azure: [
+    { name: 'gpt-4o', multiModal: true, isDefault: true },
+    { name: 'gpt-4o-mini', multiModal: true },
+    { name: 'gpt-4', multiModal: true },
+    { name: 'gpt-4-turbo', multiModal: true },
+    { name: 'gpt-4-vision-preview', multiModal: true },
+    { name: 'gpt-35-turbo' },
+    { name: 'gpt-35-turbo-16k' },
+  ],
   xai: [
     { name: 'grok-3', isDefault: true },
     { name: 'grok-3-fast' },
@@ -111,9 +119,83 @@ const modelDefinitions: Record<AIService, ModelInfo[]> = {
     { name: 'accounts/fireworks/models/yi-large' },
   ],
   deepseek: [{ name: 'deepseek-chat' }, { name: 'deepseek-reasoner' }],
-  openrouter: [],
-  lmstudio: [],
-  ollama: [],
+  openrouter: [
+    // OpenAI models
+    { name: 'openai/gpt-4o', multiModal: true, isDefault: true },
+    { name: 'openai/gpt-4o-mini', multiModal: true },
+    { name: 'openai/gpt-4-turbo', multiModal: true },
+    { name: 'openai/gpt-4-vision-preview', multiModal: true },
+    { name: 'openai/gpt-4' },
+    { name: 'openai/gpt-3.5-turbo' },
+    // Anthropic models
+    { name: 'anthropic/claude-3-opus', multiModal: true },
+    { name: 'anthropic/claude-3-sonnet', multiModal: true },
+    { name: 'anthropic/claude-3-haiku', multiModal: true },
+    { name: 'anthropic/claude-3.5-sonnet', multiModal: true },
+    { name: 'anthropic/claude-3.5-haiku', multiModal: true },
+    // Google models
+    { name: 'google/gemini-pro-1.5', multiModal: true },
+    { name: 'google/gemini-flash-1.5', multiModal: true },
+    { name: 'google/gemini-pro-vision' },
+    // Meta models
+    { name: 'meta-llama/llama-3.2-11b-vision-instruct', multiModal: true },
+    { name: 'meta-llama/llama-3.2-90b-vision-instruct', multiModal: true },
+    { name: 'meta-llama/llama-3.1-8b-instruct' },
+    { name: 'meta-llama/llama-3.1-70b-instruct' },
+    { name: 'meta-llama/llama-3.1-405b-instruct' },
+    // xAI models
+    { name: 'x-ai/grok-vision-beta', multiModal: true },
+    { name: 'x-ai/grok-2-1212' },
+    // Mistral models
+    { name: 'mistralai/pixtral-12b-2409', multiModal: true },
+    { name: 'mistralai/pixtral-large-latest', multiModal: true },
+    { name: 'mistralai/mistral-large-latest' },
+    // Qwen models
+    { name: 'qwen/qwen-2-vl-72b-instruct', multiModal: true },
+    { name: 'qwen/qwen-2-vl-7b-instruct', multiModal: true },
+    { name: 'qwen/qwen-2.5-72b-instruct' },
+    // Other popular models
+    { name: 'nvidia/llama-3.1-nemotron-70b-instruct' },
+    { name: 'deepseek/deepseek-chat' },
+    { name: 'cognitivecomputations/dolphin-llama-3-70b' },
+  ],
+  lmstudio: [
+    // Vision models that can be run in LM Studio
+    { name: 'llava-v1.5-7b-4bit', multiModal: true, isDefault: true },
+    { name: 'llava-v1.5-13b-4bit', multiModal: true },
+    { name: 'llava-v1.6-34b-4bit', multiModal: true },
+    { name: 'llava-phi-3-mini-4bit', multiModal: true },
+    { name: 'llava-llama-3-8b-v1_1-4bit', multiModal: true },
+    { name: 'bakllava-1-7b-4bit', multiModal: true },
+    { name: 'moondream2-4bit', multiModal: true },
+    // Text-only models
+    { name: 'llama-3.1-8b-instruct' },
+    { name: 'llama-3.1-70b-instruct' },
+    { name: 'phi-3.5-mini-instruct' },
+    { name: 'qwen-2.5-7b-instruct' },
+    { name: 'mistral-7b-instruct' },
+    { name: 'gemma-2-9b-instruct' },
+  ],
+  ollama: [
+    // Vision models available through Ollama
+    { name: 'llava:latest', multiModal: true, isDefault: true },
+    { name: 'llava:7b', multiModal: true },
+    { name: 'llava:13b', multiModal: true },
+    { name: 'llava:34b', multiModal: true },
+    { name: 'llava-phi3:latest', multiModal: true },
+    { name: 'llava-llama3:latest', multiModal: true },
+    { name: 'bakllava:latest', multiModal: true },
+    { name: 'moondream:latest', multiModal: true },
+    { name: 'minicpm-v:latest', multiModal: true },
+    // Text-only models
+    { name: 'llama3.1:latest' },
+    { name: 'llama3.1:8b' },
+    { name: 'llama3.1:70b' },
+    { name: 'phi3.5:latest' },
+    { name: 'qwen2.5:latest' },
+    { name: 'mistral:latest' },
+    { name: 'gemma2:latest' },
+  ],
   dify: [],
   'custom-api': [],
 }

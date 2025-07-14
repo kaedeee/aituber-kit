@@ -1127,6 +1127,32 @@ const ModelProvider = () => {
               </div>
               <div className="my-6">
                 <div className="my-4 text-xl font-bold">{t('SelectModel')}</div>
+                <select
+                  className="px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
+                  value={selectAIModel}
+                  onChange={(e) => {
+                    const model = e.target.value
+                    settingsStore.setState({
+                      selectAIModel: model,
+                    })
+                    // Auto-disable multimodal toggle for non-multimodal models
+                    if (!isMultiModalModel(selectAIService, model)) {
+                      settingsStore.setState({
+                        autoSendImagesInMultiModal: false,
+                      })
+                    }
+                  }}
+                >
+                  {getModels(selectAIService).map((model) => (
+                    <option key={model} value={model}>
+                      {model} {isMultiModalModel(selectAIService, model) ? '📷' : ''}
+                    </option>
+                  ))}
+                </select>
+                {/* Allow custom model input as fallback */}
+                <div className="my-4 text-sm text-gray-600">
+                  {t('OrEnterCustomModel', 'Or enter a custom model:')}
+                </div>
                 <input
                   className="text-ellipsis px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
                   type="text"
@@ -1137,9 +1163,12 @@ const ModelProvider = () => {
                     settingsStore.setState({
                       selectAIModel: model,
                     })
-
-                    // For local LLMs, we can't determine multimodal capability automatically
-                    // So we don't auto-disable the toggle
+                    // Auto-disable multimodal toggle for non-multimodal models
+                    if (!isMultiModalModel(selectAIService, model)) {
+                      settingsStore.setState({
+                        autoSendImagesInMultiModal: false,
+                      })
+                    }
                   }}
                 />
               </div>
@@ -1255,7 +1284,7 @@ const ModelProvider = () => {
                 />
               </div>
 
-              {/* Model Selection Section (LMStudio style) */}
+              {/* Model Selection Section */}
               <div className="my-6">
                 <div className="my-4 text-xl font-bold">{t('SelectModel')}</div>
                 <div className="my-4">
@@ -1265,6 +1294,32 @@ const ModelProvider = () => {
                     url="https://openrouter.ai/models"
                     label={t('OpenRouterModelLink', 'OpenRouter Model')}
                   />
+                </div>
+                <select
+                  className="px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
+                  value={selectAIModel}
+                  onChange={(e) => {
+                    const model = e.target.value
+                    settingsStore.setState({
+                      selectAIModel: model,
+                    })
+                    // Auto-disable multimodal toggle for non-multimodal models
+                    if (!isMultiModalModel('openrouter', model)) {
+                      settingsStore.setState({
+                        autoSendImagesInMultiModal: false,
+                      })
+                    }
+                  }}
+                >
+                  {getModels('openrouter').map((model) => (
+                    <option key={model} value={model}>
+                      {model} {isMultiModalModel('openrouter', model) ? '📷' : ''}
+                    </option>
+                  ))}
+                </select>
+                {/* Allow custom model input as fallback */}
+                <div className="my-4 text-sm text-gray-600">
+                  {t('OrEnterCustomModel', 'Or enter a custom model:')}
                 </div>
                 <input
                   className="text-ellipsis px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
@@ -1278,9 +1333,12 @@ const ModelProvider = () => {
                     settingsStore.setState({
                       selectAIModel: model,
                     })
-
-                    // For OpenRouter, we can't determine multimodal capability automatically
-                    // So we don't auto-disable the toggle
+                    // Auto-disable multimodal toggle for non-multimodal models
+                    if (!isMultiModalModel('openrouter', model)) {
+                      settingsStore.setState({
+                        autoSendImagesInMultiModal: false,
+                      })
+                    }
                   }}
                 />
               </div>
