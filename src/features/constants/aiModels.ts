@@ -50,7 +50,13 @@ const modelDefinitions: Record<AIService, ModelInfo[]> = {
     { name: 'gemini-1.5-flash-8b', multiModal: true },
     { name: 'gemini-1.5-flash-8b-latest', multiModal: true },
   ],
-  azure: [],
+  azure: [
+    { name: 'gpt-4o', multiModal: true, isDefault: true },
+    { name: 'gpt-4o-mini', multiModal: true },
+    { name: 'gpt-4-vision-preview', multiModal: true },
+    { name: 'gpt-4-turbo' },
+    { name: 'gpt-35-turbo' },
+  ],
   xai: [
     { name: 'grok-3', isDefault: true },
     { name: 'grok-3-fast' },
@@ -111,9 +117,38 @@ const modelDefinitions: Record<AIService, ModelInfo[]> = {
     { name: 'accounts/fireworks/models/yi-large' },
   ],
   deepseek: [{ name: 'deepseek-chat' }, { name: 'deepseek-reasoner' }],
-  openrouter: [],
-  lmstudio: [],
-  ollama: [],
+  openrouter: [
+    { name: 'openai/gpt-4o', multiModal: true, isDefault: true },
+    { name: 'openai/gpt-4o-mini', multiModal: true },
+    { name: 'anthropic/claude-3-5-sonnet', multiModal: true },
+    { name: 'anthropic/claude-3-5-haiku', multiModal: true },
+    { name: 'google/gemini-pro-vision', multiModal: true },
+    { name: 'meta-llama/llama-3.2-11b-vision-instruct', multiModal: true },
+    { name: 'openai/gpt-4-turbo' },
+    { name: 'openai/gpt-3.5-turbo' },
+    { name: 'anthropic/claude-3-opus' },
+    { name: 'google/gemini-pro' },
+    { name: 'meta-llama/llama-3.1-8b-instruct' },
+    { name: 'custom', isDefault: false }, // Special option for manual input
+  ],
+  lmstudio: [
+    { name: 'llava:latest', multiModal: true, isDefault: true },
+    { name: 'bakllava:latest', multiModal: true },
+    { name: 'moondream:latest', multiModal: true },
+    { name: 'llama3.2-vision:latest', multiModal: true },
+    { name: 'llama3.1:latest' },
+    { name: 'qwen2.5:latest' },
+    { name: 'custom', isDefault: false }, // Special option for manual input
+  ],
+  ollama: [
+    { name: 'llava:latest', multiModal: true, isDefault: true },
+    { name: 'bakllava:latest', multiModal: true },
+    { name: 'moondream:latest', multiModal: true },
+    { name: 'llama3.2-vision:latest', multiModal: true },
+    { name: 'llama3.1:latest' },
+    { name: 'qwen2.5:latest' },
+    { name: 'custom', isDefault: false }, // Special option for manual input
+  ],
   dify: [],
   'custom-api': [],
 }

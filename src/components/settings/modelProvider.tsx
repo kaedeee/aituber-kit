@@ -779,6 +779,33 @@ const ModelProvider = () => {
                   </>
                 )}
               </div>
+              {!realtimeAPIMode && (
+                <div className="my-6">
+                  <div className="my-4 text-xl font-bold">{t('SelectModel')}</div>
+                  <select
+                    className="px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
+                    value={selectAIModel}
+                    onChange={(e) => {
+                      const model = e.target.value
+                      settingsStore.setState({
+                        selectAIModel: model,
+                      })
+
+                      if (!isMultiModalModel('azure', model)) {
+                        settingsStore.setState({
+                          autoSendImagesInMultiModal: false,
+                        })
+                      }
+                    }}
+                  >
+                    {getModels('azure').map((model) => (
+                      <option key={model} value={model}>
+                        {model} {isMultiModalModel('azure', model) ? '📷' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </>
           )
         } else if (selectAIService === 'xai') {
@@ -1127,21 +1154,46 @@ const ModelProvider = () => {
               </div>
               <div className="my-6">
                 <div className="my-4 text-xl font-bold">{t('SelectModel')}</div>
-                <input
-                  className="text-ellipsis px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
-                  type="text"
-                  placeholder="..."
-                  value={selectAIModel}
+                <select
+                  className="px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
+                  value={selectAIModel === 'custom' || !getModels(selectAIService).includes(selectAIModel) ? 'custom' : selectAIModel}
                   onChange={(e) => {
                     const model = e.target.value
-                    settingsStore.setState({
-                      selectAIModel: model,
-                    })
+                    if (model !== 'custom') {
+                      settingsStore.setState({
+                        selectAIModel: model,
+                      })
 
-                    // For local LLMs, we can't determine multimodal capability automatically
-                    // So we don't auto-disable the toggle
+                      if (!isMultiModalModel(selectAIService, model)) {
+                        settingsStore.setState({
+                          autoSendImagesInMultiModal: false,
+                        })
+                      }
+                    }
                   }}
-                />
+                >
+                  {getModels(selectAIService).filter((model) => model !== 'custom').map((model) => (
+                    <option key={model} value={model}>
+                      {model} {isMultiModalModel(selectAIService, model) ? '📷' : ''}
+                    </option>
+                  ))}
+                  <option value="custom">{t('CustomModel', 'Custom Model')}</option>
+                </select>
+                
+                {(selectAIModel === 'custom' || !getModels(selectAIService).includes(selectAIModel)) && (
+                  <input
+                    className="text-ellipsis px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg mt-4"
+                    type="text"
+                    placeholder="..."
+                    value={selectAIModel === 'custom' ? '' : selectAIModel}
+                    onChange={(e) => {
+                      const model = e.target.value
+                      settingsStore.setState({
+                        selectAIModel: model,
+                      })
+                    }}
+                  />
+                )}
               </div>
             </>
           )
@@ -1255,34 +1307,61 @@ const ModelProvider = () => {
                 />
               </div>
 
-              {/* Model Selection Section (LMStudio style) */}
+              {/* Model Selection Section */}
               <div className="my-6">
                 <div className="my-4 text-xl font-bold">{t('SelectModel')}</div>
-                <div className="my-4">
-                  {t('OpenRouterModelNameInstruction')}
-                  <br />
-                  <Link
-                    url="https://openrouter.ai/models"
-                    label={t('OpenRouterModelLink', 'OpenRouter Model')}
-                  />
-                </div>
-                <input
-                  className="text-ellipsis px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
-                  type="text"
-                  placeholder={t('ModelIdentifierPlaceholder', {
-                    defaultValue: 'openai/gpt-4o',
-                  })}
-                  value={selectAIModel}
+                <select
+                  className="px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
+                  value={selectAIModel === 'custom' || !getModels('openrouter').includes(selectAIModel) ? 'custom' : selectAIModel}
                   onChange={(e) => {
                     const model = e.target.value
-                    settingsStore.setState({
-                      selectAIModel: model,
-                    })
+                    if (model !== 'custom') {
+                      settingsStore.setState({
+                        selectAIModel: model,
+                      })
 
-                    // For OpenRouter, we can't determine multimodal capability automatically
-                    // So we don't auto-disable the toggle
+                      if (!isMultiModalModel('openrouter', model)) {
+                        settingsStore.setState({
+                          autoSendImagesInMultiModal: false,
+                        })
+                      }
+                    }
                   }}
-                />
+                >
+                  {getModels('openrouter').filter((model) => model !== 'custom').map((model) => (
+                    <option key={model} value={model}>
+                      {model} {isMultiModalModel('openrouter', model) ? '📷' : ''}
+                    </option>
+                  ))}
+                  <option value="custom">{t('CustomModel', 'Custom Model')}</option>
+                </select>
+                
+                {(selectAIModel === 'custom' || !getModels('openrouter').includes(selectAIModel)) && (
+                  <>
+                    <div className="my-4">
+                      {t('OpenRouterModelNameInstruction')}
+                      <br />
+                      <Link
+                        url="https://openrouter.ai/models"
+                        label={t('OpenRouterModelLink', 'OpenRouter Model')}
+                      />
+                    </div>
+                    <input
+                      className="text-ellipsis px-4 py-2 w-col-span-2 bg-white hover:bg-white-hover rounded-lg"
+                      type="text"
+                      placeholder={t('ModelIdentifierPlaceholder', {
+                        defaultValue: 'openai/gpt-4o',
+                      })}
+                      value={selectAIModel === 'custom' ? '' : selectAIModel}
+                      onChange={(e) => {
+                        const model = e.target.value
+                        settingsStore.setState({
+                          selectAIModel: model,
+                        })
+                      }}
+                    />
+                  </>
+                )}
               </div>
             </>
           )
