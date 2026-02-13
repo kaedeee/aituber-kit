@@ -10,14 +10,15 @@ import { synthesizeVoiceCartesiaApi } from './synthesizeVoiceCartesia'
 import { synthesizeVoiceGoogleApi } from './synthesizeVoiceGoogle'
 import { synthesizeVoiceVoicevoxApi } from './synthesizeVoiceVoicevox'
 import { synthesizeVoiceAivisSpeechApi } from './synthesizeVoiceAivisSpeech'
+import { synthesizeVoiceAivisCloudApi } from './synthesizeVoiceAivisCloudApi'
 import { synthesizeVoiceGSVIApi } from './synthesizeVoiceGSVI'
 import { synthesizeVoiceOpenAIApi } from './synthesizeVoiceOpenAI'
 import { synthesizeVoiceAzureOpenAIApi } from './synthesizeVoiceAzureOpenAI'
 import toastStore from '@/features/stores/toast'
 import i18next from 'i18next'
 import { SpeakQueue } from './speakQueue'
-import { synthesizeVoiceNijivoiceApi } from './synthesizeVoiceNijivoice'
 import { Live2DHandler } from './live2dHandler'
+import { PNGTuberHandler } from '@/features/pngTuber/pngTuberHandler'
 import {
   asyncConvertEnglishToJapaneseReading,
   containsEnglish,
@@ -116,8 +117,26 @@ async function synthesizeVoice(
           ss.aivisSpeechSpeaker,
           ss.aivisSpeechSpeed,
           ss.aivisSpeechPitch,
-          ss.aivisSpeechIntonation,
-          ss.aivisSpeechServerUrl
+          ss.aivisSpeechIntonationScale,
+          ss.aivisSpeechServerUrl,
+          ss.aivisSpeechTempoDynamics,
+          ss.aivisSpeechPrePhonemeLength,
+          ss.aivisSpeechPostPhonemeLength
+        )
+      case 'aivis_cloud_api':
+        return await synthesizeVoiceAivisCloudApi(
+          talk,
+          ss.aivisCloudApiKey,
+          ss.aivisCloudModelUuid,
+          ss.aivisCloudStyleId,
+          ss.aivisCloudStyleName,
+          ss.aivisCloudUseStyleName,
+          ss.aivisCloudSpeed,
+          ss.aivisCloudPitch,
+          ss.aivisCloudIntonationScale,
+          ss.aivisCloudTempoDynamics,
+          ss.aivisCloudPrePhonemeLength,
+          ss.aivisCloudPostPhonemeLength
         )
       case 'gsvitts':
         return await synthesizeVoiceGSVIApi(
@@ -156,15 +175,6 @@ async function synthesizeVoice(
           ss.azureTTSEndpoint || ss.azureEndpoint,
           ss.openaiTTSVoice,
           ss.openaiTTSSpeed
-        )
-      case 'nijivoice':
-        return await synthesizeVoiceNijivoiceApi(
-          talk,
-          ss.nijivoiceApiKey,
-          ss.nijivoiceActorId,
-          ss.nijivoiceSpeed,
-          ss.nijivoiceEmotionalLevel,
-          ss.nijivoiceSoundDuration
         )
       default:
         return null
@@ -359,6 +369,7 @@ export const testVoice = async (voiceType: AIVoice, customText?: string) => {
   const defaultMessages: Record<AIVoice, string> = {
     voicevox: 'ボイスボックスを使用します',
     aivis_speech: 'AivisSpeechを使用します',
+    aivis_cloud_api: 'Aivis Cloud APIを使用します',
     koeiromap: 'コエイロマップを使用します',
     google: 'Google Text-to-Speechを使用します',
     stylebertvits2: 'StyleBertVITS2を使用します',
@@ -367,7 +378,6 @@ export const testVoice = async (voiceType: AIVoice, customText?: string) => {
     cartesia: 'Cartesiaを使用します',
     openai: 'OpenAI TTSを使用します',
     azure: 'Azure TTSを使用します',
-    nijivoice: 'にじボイスを使用します',
   }
 
   const message = customText || defaultMessages[voiceType]
@@ -391,6 +401,8 @@ export const testVoice = async (voiceType: AIVoice, customText?: string) => {
         await hs.viewer.model?.speak(buffer, talk)
       } else if (ss.modelType === 'live2d') {
         Live2DHandler.speak(buffer, talk)
+      } else if (ss.modelType === 'pngtuber') {
+        await PNGTuberHandler.speak(buffer, talk)
       }
     }
   } catch (error) {

@@ -2,6 +2,8 @@
 
 <img style="max-width: 100%;" src="./public/ogp.png">
 
+<p align="center"><strong>AIキャラ構築のオールインワンツールキット</strong></p>
+
 **お知らせ: 本プロジェクトはバージョン v2.0.0 以降、カスタムライセンスを採用しています。商用目的でご利用の場合は、[利用規約](#利用規約) セクションをご確認ください。**
 
 <p align="center">
@@ -38,7 +40,8 @@
 
 <h3 align="center">
    <a href="./docs/README_en.md">English</a>｜
-   <a href="./docs/README_zh.md">中文</a>｜
+   <a href="./docs/README_zh-CN.md">简体中文</a>｜
+   <a href="./docs/README_zh-TW.md">繁體中文</a>｜
    <a href="./docs/README_ko.md">한국어</a>｜
    <a href="./docs/README_pl.md">Polski</a>
 </h3>
@@ -52,10 +55,6 @@ AITuberKitは、誰でも簡単にAIキャラクターとチャットできるWe
 
 詳細な使用方法や設定方法については、[ドキュメントサイト](https://docs.aituberkit.com/)をご覧ください。
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=tegnike/aituber-kit&type=Date)](https://star-history.com/#tegnike/aituber-kit&Date)
-
 ## 主な機能
 
 ### 1. AIキャラとの対話
@@ -63,19 +62,31 @@ AITuberKitは、誰でも簡単にAIキャラクターとチャットできるWe
 - 各種LLMのAPIキーを使って、AIキャラクターと簡単に会話可能
 - マルチモーダル対応で、カメラからの映像やアップロードした画像を認識して回答を生成
 - 直近の会話文を記憶として保持
+- RAGベースの長期記憶で、過去の会話をコンテキストに活用
 
 ### 2. AITuber配信
 
 - YouTubeの配信コメントを取得して、AIキャラクターが自動で応答
+- コメント取得元にYouTube API / わんコメ(OneComme)を選択可能
 - 会話継続モードでコメントがなくても自発的に発言可能
-- "#"から始まるコメントは読まれない機能
+- コメント取得間隔やユーザー表示名のカスタマイズに対応
 
-### 3. その他の機能
+### 3. デモ端末・デジタルサイネージ
+
+- **デモ端末モード**: デジタルサイネージ向けフルスクリーン表示。パスコード認証、NGワードフィルタ、入力長制限に対応
+- **人感検知**: カメラ顔検出による来場者の自動検知。挨拶・お別れフレーズの自動再生に対応
+- **アイドルモード**: 会話が途絶えた際にキャラクターが自動発話。定型フレーズ、時間帯別挨拶、AI自動生成の3ソースに対応
+
+### 4. 高度な対話モード
+
+- **Realtime API**: OpenAIのRealtime APIを使用した低遅延対話と関数実行
+- **オーディオモード**: OpenAIのAudio API機能を活用した自然な音声対話
+- **Reasoningモード**: AIの思考プロセスを表示し、推論パラメータを設定可能
+
+### 5. 連携・拡張
 
 - **外部連携モード**: WebSocketでサーバーアプリと連携し、より高度な機能を実現
 - **スライドモード**: AIキャラクターがスライドを自動で発表するモード
-- **Realtime API**: OpenAIのRealtime APIを使用した低遅延対話と関数実行
-- **オーディオモード**: OpenAIのAudio API機能を活用した自然な音声対話
 - **メッセージ受信機能**: 専用APIを通じて外部から指示を受け付け、AIキャラクターに発言させることが可能
 
 ## 対応モデル・サービス
@@ -84,6 +95,7 @@ AITuberKitは、誰でも簡単にAIキャラクターとチャットできるWe
 
 - **3Dモデル**: VRMファイル
 - **2Dモデル**: Live2Dファイル（Cubism 3以降）
+- **動くPngTuber**: 動画ベースのキャラクター表示（[MotionPNGTuber](https://github.com/rotejin/MotionPNGTuber)）
 
 ### 対応LLM
 
@@ -96,8 +108,12 @@ AITuberKitは、誰でも簡単にAIキャラクターとチャットできるWe
 - Mistral AI
 - Perplexity
 - Fireworks
-- ローカルLLM
+- LM Studio
+- Ollama
 - Dify
+- xAI
+- DeepSeek
+- OpenRouter
 
 ### 対応音声合成エンジン
 
@@ -106,18 +122,19 @@ AITuberKitは、誰でも簡単にAIキャラクターとチャットできるWe
 - Google Text-to-Speech
 - Style-Bert-VITS2
 - AivisSpeech
+- Aivis Cloud API
+- Cartesia
 - GSVI TTS
 - ElevenLabs
 - OpenAI
 - Azure OpenAI
-- にじボイス
 
 ## クイックスタート
 
 ### 開発環境
 
-- Node.js: ^20.0.0
-- npm: ^10.0.0
+- Node.js: 24.x
+- npm: ^11.6.2
 
 ### インストール手順
 
@@ -139,21 +156,43 @@ cd aituber-kit
 npm install
 ```
 
-4. 開発モードでアプリケーションを起動します。
-
-```bash
-npm run dev
-```
-
-5. URLを開きます。[http://localhost:3000](http://localhost:3000)
-
-6. 必要に応じて.envファイルを作成します。
+4. 必要に応じて.envファイルを作成します。
 
 ```bash
 cp .env.example .env
 ```
 
+5. 開発モードでアプリケーションを起動します。
+
+```bash
+npm run dev
+```
+
+6. URLを開きます。[http://localhost:3000](http://localhost:3000)
+
 詳細な設定方法や使用方法については、[ドキュメントサイト](https://docs.aituberkit.com/)をご覧ください。
+
+### Dockerで起動する場合
+
+1. `.env`ファイルを作成します。
+
+```bash
+cp .env.example .env
+```
+
+2. Docker Composeで起動します。
+
+```bash
+docker compose up -d
+```
+
+3. URLを開きます。[http://localhost:3000](http://localhost:3000)
+
+停止する場合:
+
+```bash
+docker compose down
+```
 
 ## ⚠️ セキュリティに関する重要な注意事項
 
@@ -189,9 +228,6 @@ cp .env.example .env
   </a>
   <a href="https://github.com/coderabbitai" title="coderabbitai">
     <img src="https://github.com/coderabbitai.png" width="40" height="40" alt="coderabbitai">
-  </a>
-  <a href="https://github.com/ai-bootcamp-tokyo" title="ai-bootcamp-tokyo">
-    <img src="https://github.com/ai-bootcamp-tokyo.png" width="40" height="40" alt="ai-bootcamp-tokyo">
   </a>
   <a href="https://github.com/wmoto-ai" title="wmoto-ai">
     <img src="https://github.com/wmoto-ai.png" width="40" height="40" alt="wmoto-ai">
@@ -263,7 +299,7 @@ cp .env.example .env
     <img src="https://github.com/uwaguchi.png" width="40" height="40" alt="uwaguchi">
   </a>
   <a href="https://x.com/M1RA_A_Project" title="M1RA_A_Project">
-    <img src="https://pbs.twimg.com/profile_images/1903385253504507904/ceBSG9Wl_400x400.jpg" width="40" height="40" alt="M1RA_A_Project">
+    <img src="https://pbs.twimg.com/profile_images/2013543177253249025/AKHpzZde_400x400.jpg" width="40" height="40" alt="M1RA_A_Project">
   </a>
   <a href="https://github.com/teruPP" title="teruPP">
     <img src="https://github.com/teruPP.png" width="40" height="40" alt="teruPP">
@@ -283,9 +319,29 @@ cp .env.example .env
   <a href="https://github.com/schroneko" title="schroneko">
     <img src="https://github.com/schroneko.png" width="40" height="40" alt="schroneko">
   </a>
+  <a href="https://github.com/ParachutePenguin" title="ParachutePenguin">
+    <img src="https://github.com/ParachutePenguin.png" width="40" height="40" alt="ParachutePenguin">
+  </a>
+  <a href="https://github.com/eruma" title="eruma">
+    <img src="https://github.com/eruma.png" width="40" height="40" alt="eruma">
+  </a>
+  <a href="https://x.com/_cityside" title="_cityside">
+    <img src="https://pbs.twimg.com/profile_images/1987812690254082048/KyWdQTT4_400x400.jpg" width="40" height="40" alt="_cityside">
+  </a>
+  <a href="https://github.com/nyapan-mohy" title="nyapan-mohy">
+    <img src="https://github.com/nyapan-mohy.png" width="40" height="40" alt="nyapan-mohy">
+  </a>
 </p>
 
 他、プライベートスポンサー 複数名
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=tegnike/aituber-kit&type=Date)](https://star-history.com/#tegnike/aituber-kit&Date)
+
+## 謝辞
+
+本プロジェクトは、pixiv株式会社が公開する [ChatVRM](https://github.com/pixiv/ChatVRM) をフォークして開発されています。素晴らしいオープンソースプロジェクトを公開してくださったpixiv株式会社に深く感謝いたします。
 
 ## 貢献
 
@@ -319,7 +375,6 @@ AITuberKitの発展にご協力いただき、ありがとうございます。�
 本プロジェクトは、バージョン v2.0.0 以降、**カスタムライセンス**を採用しています。
 
 - **無償利用**
-
   - 営利目的以外での個人利用、教育目的、非営利目的での使用は無償で利用可能です。
 
 - **商用ライセンス**

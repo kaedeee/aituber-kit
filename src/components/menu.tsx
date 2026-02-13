@@ -15,6 +15,7 @@ import Capture from './capture'
 import { isMultiModalAvailable } from '@/features/constants/aiModels'
 import { AIService } from '@/features/constants/settings'
 import { getLatestAssistantMessage } from '@/utils/assistantMessageUtils'
+import { useKioskMode } from '@/hooks/useKioskMode'
 
 // モバイルデバイス検出用のカスタムフック
 const useIsMobile = () => {
@@ -43,6 +44,7 @@ export const Menu = () => {
   const selectAIModel = settingsStore((s) => s.selectAIModel)
   const enableMultiModal = settingsStore((s) => s.enableMultiModal)
   const multiModalMode = settingsStore((s) => s.multiModalMode)
+  const customModel = settingsStore((s) => s.customModel)
   const youtubeMode = settingsStore((s) => s.youtubeMode)
   const youtubePlaying = settingsStore((s) => s.youtubePlaying)
   const slideMode = settingsStore((s) => s.slideMode)
@@ -54,8 +56,31 @@ export const Menu = () => {
   const slidePlaying = slideStore((s) => s.isPlaying)
   const showAssistantText = settingsStore((s) => s.showAssistantText)
 
+  // デモ端末モード関連
+  const { isKioskMode, isTemporaryUnlocked, canAccessSettings } = useKioskMode()
+
+  // デモ端末モード時はコントロールパネルを非表示（一時解除時は除く）
+  const effectiveShowControlPanel =
+    showControlPanel && (!isKioskMode || isTemporaryUnlocked)
+
   const [showSettings, setShowSettings] = useState(false)
-  const [showChatLog, setShowChatLog] = useState(false)
+
+  // キオスクモードで設定アクセス権が剥奪された場合に自動クローズ
+  useEffect(() => {
+    if (!canAccessSettings) {
+      setShowSettings(false)
+    }
+  }, [canAccessSettings])
+  // 会話ログ表示モード
+  const CHAT_LOG_MODE = {
+    HIDDEN: 0, // 非表示
+    ASSISTANT: 1, // アシスタントテキスト
+    CHAT_LOG: 2, // 会話ログ
+  } as const
+
+  const [chatLogMode, setChatLogMode] = useState<number>(
+    CHAT_LOG_MODE.ASSISTANT
+  )
   const [showPermissionModal, setShowPermissionModal] = useState(false)
   const imageFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -73,10 +98,14 @@ export const Menu = () => {
 
   // ロングタップ処理用の関数
   const handleTouchStart = () => {
+    // デモ端末モードで設定アクセス不可の場合はロングタップを無効化
+    if (!canAccessSettings) return
     setTouchStartTime(Date.now())
   }
 
   const handleTouchEnd = () => {
+    // デモ端末モードで設定アクセス不可の場合はロングタップを無効化
+    if (!canAccessSettings) return
     setTouchEndTime(Date.now())
     if (touchStartTime && Date.now() - touchStartTime >= 800) {
       // 800ms以上押し続けるとロングタップと判定
@@ -129,6 +158,8 @@ export const Menu = () => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === '.') {
+        // デモ端末モードで設定アクセス不可の場合はショートカットを無効化
+        if (!canAccessSettings) return
         setShowSettings((prevState) => !prevState)
       }
     }
@@ -138,7 +169,7 @@ export const Menu = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [])
+  }, [canAccessSettings])
 
   useEffect(() => {
     console.log('onChangeWebcamStatus')
@@ -192,7 +223,7 @@ export const Menu = () => {
   return (
     <>
       {/* ロングタップ用の透明な領域（モバイルでコントロールパネルが非表示の場合） */}
-      {isMobile === true && !showControlPanel && (
+      {isMobile === true && !effectiveShowControlPanel && (
         <div
           className="absolute top-0 left-0 z-30 w-20 h-20"
           onTouchStart={handleTouchStart}
@@ -208,32 +239,30 @@ export const Menu = () => {
           className="grid md:grid-flow-col gap-[8px] mb-10"
           style={{ width: 'max-content' }}
         >
-          {showControlPanel && (
+          {effectiveShowControlPanel && (
             <>
-              <div className="md:order-1 order-2">
-                <IconButton
-                  iconName="24/Settings"
-                  isProcessing={false}
-                  onClick={() => setShowSettings(true)}
-                ></IconButton>
-              </div>
+              {canAccessSettings && (
+                <div className="md:order-1 order-2">
+                  <IconButton
+                    iconName="24/Settings"
+                    isProcessing={false}
+                    onClick={() => setShowSettings(true)}
+                  ></IconButton>
+                </div>
+              )}
               <div className="md:order-2 order-1">
-                {showChatLog ? (
-                  <IconButton
-                    iconName="24/CommentOutline"
-                    label={t('ChatLog')}
-                    isProcessing={false}
-                    onClick={() => setShowChatLog(false)}
-                  />
-                ) : (
-                  <IconButton
-                    iconName="24/CommentFill"
-                    label={t('ChatLog')}
-                    isProcessing={false}
-                    disabled={false}
-                    onClick={() => setShowChatLog(true)}
-                  />
-                )}
+                <IconButton
+                  iconName={
+                    chatLogMode === CHAT_LOG_MODE.CHAT_LOG
+                      ? '24/CommentOutline'
+                      : chatLogMode === CHAT_LOG_MODE.ASSISTANT
+                        ? '24/CommentFill'
+                        : '24/Close'
+                  }
+                  label={t('ChatLog')}
+                  isProcessing={false}
+                  onClick={() => setChatLogMode((prev) => (prev + 1) % 3)}
+                />
               </div>
               {!youtubeMode && (
                 <>
@@ -255,7 +284,8 @@ export const Menu = () => {
                     selectAIService as AIService,
                     selectAIModel,
                     enableMultiModal,
-                    multiModalMode
+                    multiModalMode,
+                    customModel
                   ) && (
                     <div className="order-4">
                       <IconButton
@@ -316,9 +346,11 @@ export const Menu = () => {
       <div className="relative">
         {slideMode && slideVisible && <Slides markdown={markdownContent} />}
       </div>
-      {showChatLog && <ChatLog />}
-      {showSettings && <Settings onClickClose={() => setShowSettings(false)} />}
-      {!showChatLog &&
+      {chatLogMode === CHAT_LOG_MODE.CHAT_LOG && <ChatLog />}
+      {showSettings && canAccessSettings && (
+        <Settings onClickClose={() => setShowSettings(false)} />
+      )}
+      {chatLogMode === CHAT_LOG_MODE.ASSISTANT &&
         latestAssistantMessage &&
         (!slideMode || !slideVisible) &&
         showAssistantText && <AssistantText message={latestAssistantMessage} />}
@@ -327,9 +359,9 @@ export const Menu = () => {
       {showPermissionModal && (
         <div className="modal">
           <div className="modal-content">
-            <p>カメラの使用を許可してください。</p>
+            <p>{t('Errors.CameraPermissionMessage')}</p>
             <button onClick={() => setShowPermissionModal(false)}>
-              閉じる
+              {t('Close')}
             </button>
           </div>
         </div>

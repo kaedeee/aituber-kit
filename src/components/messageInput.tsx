@@ -7,6 +7,7 @@ import settingsStore from '@/features/stores/settings'
 import slideStore from '@/features/stores/slide'
 import { isMultiModalAvailable } from '@/features/constants/aiModels'
 import { IconButton } from './iconButton'
+import { useKioskMode } from '@/hooks/useKioskMode'
 
 // ファイルバリデーションの設定
 const FILE_VALIDATION = {
@@ -55,23 +56,29 @@ export const MessageInput = ({
   const imageDisplayPosition = settingsStore((s) => s.imageDisplayPosition)
   const enableMultiModal = settingsStore((s) => s.enableMultiModal)
   const multiModalMode = settingsStore((s) => s.multiModalMode)
+  const customModel = settingsStore((s) => s.customModel)
   const [rows, setRows] = useState(1)
   const [loadingDots, setLoadingDots] = useState('')
   const [showPermissionModal, setShowPermissionModal] = useState(false)
   const [fileError, setFileError] = useState<string>('')
   const [showImageActions, setShowImageActions] = useState(false)
+  const [inputValidationError, setInputValidationError] = useState<string>('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const realtimeAPIMode = settingsStore((s) => s.realtimeAPIMode)
   const showSilenceProgressBar = settingsStore((s) => s.showSilenceProgressBar)
 
   const { t } = useTranslation()
 
+  // Kiosk mode input validation
+  const { isKioskMode, validateInput, maxInputLength } = useKioskMode()
+
   // マルチモーダル対応かどうかを判定
   const isMultiModalSupported = isMultiModalAvailable(
     selectAIService,
     selectAIModel,
     enableMultiModal,
-    multiModalMode
+    multiModalMode,
+    customModel
   )
 
   // アイコン表示の条件
@@ -108,22 +115,22 @@ export const MessageInput = ({
 
   // テキスト内容に基づいて適切な行数を計算
   const calculateRows = useCallback((text: string): number => {
-    const minRows = 1
-    const maxRows = 5 // 最大行数を制限（UIの見栄えを考慮して調整）
+    const MIN_ROWS = 1
+    const MAX_ROWS = 5 // 最大行数を制限（UIの見栄えを考慮して調整）
+    const CHARS_PER_LINE = 50 // 平均的な1行の文字数（概算）
     const lines = text.split('\n')
 
     // 各行の幅を考慮してテキストの折り返しを計算
     // 簡単な実装では改行文字の数 + 1を使用
-    const baseRows = Math.max(minRows, lines.length)
+    const baseRows = Math.max(MIN_ROWS, lines.length)
 
     // 長い行がある場合、追加の行を考慮（おおよその計算）
     const extraRows = lines.reduce((acc, line) => {
-      const charsPerLine = 50 // 平均的な1行の文字数（概算）
-      const lineRows = Math.ceil(line.length / charsPerLine)
+      const lineRows = Math.ceil(line.length / CHARS_PER_LINE)
       return acc + Math.max(0, lineRows - 1)
     }, 0)
 
-    return Math.min(maxRows, baseRows + extraRows)
+    return Math.min(MAX_ROWS, baseRows + extraRows)
   }, [])
 
   // userMessageの変更に応じて行数を調整
@@ -310,6 +317,27 @@ export const MessageInput = ({
     [isMultiModalSupported, processImageFile, t]
   )
 
+  // Validate input and handle send with kiosk mode restrictions
+  const handleValidatedSend = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent) => {
+      if (userMessage.trim() === '') return false
+
+      // Validate input in kiosk mode
+      if (isKioskMode) {
+        const validation = validateInput(userMessage)
+        if (!validation.valid) {
+          setInputValidationError(validation.reason || t('Kiosk.InputInvalid'))
+          return false
+        }
+      }
+
+      // Clear any previous validation errors
+      setInputValidationError('')
+      return true
+    },
+    [userMessage, isKioskMode, validateInput, t]
+  )
+
   const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
       // IME 文字変換中を除外しつつ、半角/全角キー（Backquote）による IME トグルは無視
@@ -320,10 +348,17 @@ export const MessageInput = ({
     ) {
       event.preventDefault() // デフォルトの挙動を防止
       if (userMessage.trim() !== '') {
-        onClickSendButton(
-          event as unknown as React.MouseEvent<HTMLButtonElement>
-        )
-        setRows(1)
+        // Validate before sending
+        if (
+          handleValidatedSend(
+            event as unknown as React.MouseEvent<HTMLButtonElement>
+          )
+        ) {
+          onClickSendButton(
+            event as unknown as React.MouseEvent<HTMLButtonElement>
+          )
+          setRows(1)
+        }
       }
     } else if (event.key === 'Enter' && event.shiftKey) {
       // Shift+Enterの場合、calculateRowsで自動計算されるため、手動で行数を増やす必要なし
@@ -337,6 +372,16 @@ export const MessageInput = ({
       updateRowsWithDelay(event.target as HTMLTextAreaElement)
     }
   }
+
+  // Handle send button click with validation
+  const handleSendClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (handleValidatedSend(event)) {
+        onClickSendButton(event)
+      }
+    },
+    [handleValidatedSend, onClickSendButton]
+  )
 
   const handleMicClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     onClickMicButton(event)
@@ -394,6 +439,12 @@ export const MessageInput = ({
               {fileError}
             </div>
           )}
+          {/* 入力バリデーションエラー表示 (Kiosk mode) */}
+          {inputValidationError && (
+            <div className="mb-2 p-2 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm">
+              {inputValidationError}
+            </div>
+          )}
           {/* 画像プレビュー - 入力欄表示設定の場合のみ */}
           {modalImage && imageDisplayPosition === 'input' && (
             <div
@@ -421,15 +472,23 @@ export const MessageInput = ({
           <div className="flex gap-2 items-end">
             <div className="flex-shrink-0 pb-[0.3rem]">
               <IconButton
-                iconName="24/Microphone"
+                iconName={
+                  continuousMicListeningMode ? '24/Close' : '24/Microphone'
+                }
                 backgroundColor={
                   continuousMicListeningMode
-                    ? 'bg-green-500 hover:bg-green-600 active:bg-green-700 text-theme'
+                    ? isMicRecording
+                      ? 'bg-green-500 text-theme'
+                      : 'bg-green-600 text-theme'
                     : undefined
                 }
                 isProcessing={isMicRecording}
-                isProcessingIcon={'24/PauseAlt'}
-                disabled={chatProcessing || isSpeaking}
+                isProcessingIcon={
+                  continuousMicListeningMode ? '24/Microphone' : '24/PauseAlt'
+                }
+                disabled={
+                  continuousMicListeningMode || chatProcessing || isSpeaking
+                }
                 onClick={handleMicClick}
               />
             </div>
@@ -496,6 +555,7 @@ export const MessageInput = ({
                 className="bg-white hover:bg-white-hover focus:bg-white disabled:bg-gray-100 disabled:text-primary-disabled rounded-2xl w-full px-4 text-theme-default font-bold disabled"
                 value={userMessage}
                 rows={rows}
+                maxLength={maxInputLength}
                 style={{
                   lineHeight: '1.5',
                   padding: showIconDisplay ? '8px 16px 8px 32px' : '8px 16px',
@@ -510,7 +570,7 @@ export const MessageInput = ({
                 className="bg-secondary hover:bg-secondary-hover active:bg-secondary-press disabled:bg-secondary-disabled"
                 isProcessing={chatProcessing}
                 disabled={chatProcessing || !userMessage || realtimeAPIMode}
-                onClick={onClickSendButton}
+                onClick={handleSendClick}
               />
 
               <IconButton

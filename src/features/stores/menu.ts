@@ -9,7 +9,11 @@ type SettingsTabKey =
   | 'speechInput'
   | 'youtube'
   | 'slide'
-  | 'log'
+  | 'images'
+  | 'memory'
+  | 'presence'
+  | 'idle'
+  | 'kiosk'
   | 'other'
 interface MenuState {
   showWebcam: boolean
