@@ -80,3 +80,5 @@ public/pngtuber/*
 
 # Playwright reports
 /reports
+
+.secretkey
