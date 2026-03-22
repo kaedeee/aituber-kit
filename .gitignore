@@ -94,3 +94,7 @@ promo-video/*
 .mypy_cache
 .swc
 .wrangler
+
+
+# Secret key
+.secretkey
