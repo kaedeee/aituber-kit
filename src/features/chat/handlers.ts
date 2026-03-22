@@ -129,6 +129,10 @@ const extractEmotion = (
   // 先頭のスペースを無視して、感情タグを検出
   const emotionMatch = text.match(/^\s*\[(.*?)\]/)
   if (emotionMatch?.[0]) {
+    // モーションタグは感情タグとして扱わない
+    if (/^\s*\[motion:/i.test(text)) {
+      return { emotionTag: '', remainingText: text }
+    }
     return {
       emotionTag: emotionMatch[0].trim(), // タグ自体の前後のスペースは除去
       // 先頭のスペースも含めて削除し、さらに前後のスペースを除去
@@ -138,6 +142,26 @@ const extractEmotion = (
     }
   }
   return { emotionTag: '', remainingText: text }
+}
+
+/**
+ * テキストからモーションタグ `[motion:xxx]` を抽出する
+ * @param text 入力テキスト
+ * @returns モーションタグと残りのテキスト
+ */
+const extractMotionTag = (
+  text: string
+): { motionTag: string; remainingText: string } => {
+  const motionMatch = text.match(/^\s*\[motion:([^\]\s]+)\]/i)
+  if (motionMatch?.[0]) {
+    return {
+      motionTag: motionMatch[1],
+      remainingText: text
+        .slice(text.indexOf(motionMatch[0]) + motionMatch[0].length)
+        .trimStart(),
+    }
+  }
+  return { motionTag: '', remainingText: text }
 }
 
 /**
@@ -167,13 +191,15 @@ const extractSentence = (
  * @param emotionTag 感情タグ (例: "[neutral]")
  * @param currentAssistantMessageListRef アシスタントメッセージリストの参照
  * @param currentSlideMessagesRef スライドメッセージリストの参照
+ * @param motionTag モーションタグ (例: "think")
  */
 const handleSpeakAndStateUpdate = (
   sessionId: string,
   sentence: string,
   emotionTag: string,
   currentAssistantMessageListRef: { current: string[] },
-  currentSlideMessagesRef: { current: string[] }
+  currentSlideMessagesRef: { current: string[] },
+  motionTag?: string
 ) => {
   const hs = homeStore.getState()
   const emotion = emotionTag.includes('[')
@@ -188,12 +214,12 @@ const handleSpeakAndStateUpdate = (
       ''
     ) === ''
   ) {
-    return
+    return false
   }
 
   speakCharacter(
     sessionId,
-    { message: sentence, emotion: emotion },
+    { message: sentence, emotion: emotion, motion: motionTag || undefined },
     () => {
       hs.incrementChatProcessingCount()
       currentSlideMessagesRef.current.push(sentence)
@@ -209,6 +235,8 @@ const handleSpeakAndStateUpdate = (
       })
     }
   )
+
+  return true
 }
 
 /**
@@ -277,8 +305,10 @@ export const speakMessageHandler = async (receivedMessage: string) => {
         const prevLocalRemaining = localRemaining
         const { emotionTag, remainingText: textAfterEmotion } =
           extractEmotion(localRemaining)
+        const { motionTag, remainingText: textAfterMotion } =
+          extractMotionTag(textAfterEmotion)
         const { sentence, remainingText: textAfterSentence } =
-          extractSentence(textAfterEmotion)
+          extractSentence(textAfterMotion)
 
         if (sentence) {
           assistantMessageListRef.current.push(sentence)
@@ -289,12 +319,13 @@ export const speakMessageHandler = async (receivedMessage: string) => {
             sentence,
             emotionTag,
             assistantMessageListRef,
-            currentSlideMessagesRef
+            currentSlideMessagesRef,
+            motionTag || undefined
           )
           localRemaining = textAfterSentence
         } else {
           if (localRemaining === prevLocalRemaining && localRemaining) {
-            const finalSentence = localRemaining
+            const finalSentence = textAfterMotion || localRemaining
             assistantMessageListRef.current.push(finalSentence)
             const aiText = emotionTag
               ? `${emotionTag} ${finalSentence}`
@@ -305,7 +336,8 @@ export const speakMessageHandler = async (receivedMessage: string) => {
               finalSentence,
               emotionTag,
               assistantMessageListRef,
-              currentSlideMessagesRef
+              currentSlideMessagesRef,
+              motionTag || undefined
             )
             localRemaining = ''
           } else {
@@ -373,6 +405,33 @@ export const speakMessageHandler = async (receivedMessage: string) => {
 export const processAIResponse = async (messages: Message[]) => {
   const sessionId = generateSessionId()
   homeStore.setState({ chatProcessing: true })
+
+  // 思考中ポーズの適用
+  const ss = settingsStore.getState()
+  const shouldApplyThinkingPose =
+    ss.thinkingPoseEnabled && ss.modelType === 'vrm'
+  if (shouldApplyThinkingPose) {
+    const poseConfig = ss.poseConfigs.find((p) => p.id === ss.thinkingPoseId)
+    if (poseConfig) {
+      const model = homeStore.getState().viewer.model
+      if (model) {
+        void model.poseManager
+          .applyPose(model, ss.thinkingPoseId, poseConfig)
+          .catch((e: unknown) =>
+            console.error('Failed to apply thinking pose:', e)
+          )
+      }
+    }
+  }
+  const resetThinkingPose = () => {
+    if (shouldApplyThinkingPose) {
+      const model = homeStore.getState().viewer.model
+      if (model?.poseManager.isActive) {
+        model.poseManager.resetToIdle(model)
+      }
+    }
+  }
+
   let stream
 
   const currentSlideMessagesRef = { current: [] as string[] }
@@ -382,11 +441,13 @@ export const processAIResponse = async (messages: Message[]) => {
     stream = await getAIChatResponseStream(messages)
   } catch (e) {
     console.error(e)
+    resetThinkingPose()
     homeStore.setState({ chatProcessing: false })
     return
   }
 
   if (stream == null) {
+    resetThinkingPose()
     homeStore.setState({ chatProcessing: false })
     return
   }
@@ -396,9 +457,12 @@ export const processAIResponse = async (messages: Message[]) => {
   let currentMessageId: string | null = null
   let currentMessageContent = ''
   let currentEmotionTag = ''
+  let currentMotionTag = ''
   let isCodeBlock = false
   let codeBlockContent = ''
   let currentThinkingContent = ''
+  let hasSpeakBeenCalled = false
+  let didStreamProcessingFail = false
 
   try {
     while (true) {
@@ -497,6 +561,7 @@ export const processAIResponse = async (messages: Message[]) => {
             codeBlockContent = ''
             isCodeBlock = false
             currentEmotionTag = ''
+            currentMotionTag = ''
 
             currentMessageId = generateMessageId()
             currentMessageContent = ''
@@ -529,19 +594,29 @@ export const processAIResponse = async (messages: Message[]) => {
                 remainingText: textAfterEmotion,
               } = extractEmotion(textToProcessBeforeCode)
               if (extractedEmotion) currentEmotionTag = extractedEmotion
+              const {
+                motionTag: extractedMotion,
+                remainingText: textAfterMotion,
+              } = extractMotionTag(textAfterEmotion)
+              if (extractedMotion) currentMotionTag = extractedMotion
               const { sentence, remainingText: textAfterSentence } =
-                extractSentence(textAfterEmotion)
+                extractSentence(textAfterMotion)
 
               if (sentence) {
-                handleSpeakAndStateUpdate(
-                  sessionId,
-                  sentence,
-                  currentEmotionTag,
-                  assistantMessageListRef,
-                  currentSlideMessagesRef
-                )
+                hasSpeakBeenCalled =
+                  handleSpeakAndStateUpdate(
+                    sessionId,
+                    sentence,
+                    currentEmotionTag,
+                    assistantMessageListRef,
+                    currentSlideMessagesRef,
+                    currentMotionTag || undefined
+                  ) || hasSpeakBeenCalled
                 textToProcessBeforeCode = textAfterSentence
-                if (!textAfterSentence) currentEmotionTag = ''
+                if (!textAfterSentence) {
+                  currentEmotionTag = ''
+                  currentMotionTag = ''
+                }
               } else {
                 receivedChunksForSpeech =
                   textToProcessBeforeCode + receivedChunksForSpeech
@@ -578,20 +653,30 @@ export const processAIResponse = async (messages: Message[]) => {
               remainingText: textAfterEmotion,
             } = extractEmotion(processableTextForSpeech)
             if (extractedEmotion) currentEmotionTag = extractedEmotion
+            const {
+              motionTag: extractedMotion,
+              remainingText: textAfterMotion,
+            } = extractMotionTag(textAfterEmotion)
+            if (extractedMotion) currentMotionTag = extractedMotion
 
             const { sentence, remainingText: textAfterSentence } =
-              extractSentence(textAfterEmotion)
+              extractSentence(textAfterMotion)
 
             if (sentence) {
-              handleSpeakAndStateUpdate(
-                sessionId,
-                sentence,
-                currentEmotionTag,
-                assistantMessageListRef,
-                currentSlideMessagesRef
-              )
+              hasSpeakBeenCalled =
+                handleSpeakAndStateUpdate(
+                  sessionId,
+                  sentence,
+                  currentEmotionTag,
+                  assistantMessageListRef,
+                  currentSlideMessagesRef,
+                  currentMotionTag || undefined
+                ) || hasSpeakBeenCalled
               processableTextForSpeech = textAfterSentence
-              if (!textAfterSentence) currentEmotionTag = ''
+              if (!textAfterSentence) {
+                currentEmotionTag = ''
+                currentMotionTag = ''
+              }
             } else {
               receivedChunksForSpeech =
                 processableTextForSpeech + receivedChunksForSpeech
@@ -623,14 +708,21 @@ export const processAIResponse = async (messages: Message[]) => {
             const { emotionTag: extractedEmotion, remainingText: finalText } =
               extractEmotion(finalSentence)
             if (extractedEmotion) currentEmotionTag = extractedEmotion
+            const {
+              motionTag: extractedMotion,
+              remainingText: finalTextAfterMotion,
+            } = extractMotionTag(finalText)
+            if (extractedMotion) currentMotionTag = extractedMotion
 
-            handleSpeakAndStateUpdate(
-              sessionId,
-              finalText,
-              currentEmotionTag,
-              assistantMessageListRef,
-              currentSlideMessagesRef
-            )
+            hasSpeakBeenCalled =
+              handleSpeakAndStateUpdate(
+                sessionId,
+                finalTextAfterMotion,
+                currentEmotionTag,
+                assistantMessageListRef,
+                currentSlideMessagesRef,
+                currentMotionTag || undefined
+              ) || hasSpeakBeenCalled
           } else {
             console.warn(
               'Stream ended while still in code block state. Saving remaining code.',
@@ -663,11 +755,15 @@ export const processAIResponse = async (messages: Message[]) => {
       }
     }
   } catch (e) {
+    didStreamProcessingFail = true
     console.error('Error processing AI response stream:', e)
   } finally {
     reader.releaseLock()
   }
 
+  if (didStreamProcessingFail || !hasSpeakBeenCalled) {
+    resetThinkingPose()
+  }
   homeStore.setState({
     chatProcessing: false,
   })
@@ -721,9 +817,16 @@ export const handleSendChatFn =
       homeStore.setState({ chatProcessing: true })
 
       if (wsManager?.websocket?.readyState === WebSocket.OPEN) {
+        const userMessageContent: Message['content'] = modalImage
+          ? [
+              { type: 'text' as const, text: newMessage },
+              { type: 'image' as const, image: modalImage },
+            ]
+          : newMessage
+
         homeStore.getState().upsertMessage({
           role: 'user',
-          content: newMessage,
+          content: userMessageContent,
           timestamp: timestamp,
           userName: userName,
         })
@@ -734,9 +837,18 @@ export const handleSendChatFn =
           timestamp: timestamp,
         }).catch(() => {})
 
-        wsManager.websocket.send(
-          JSON.stringify({ content: newMessage, type: 'chat' })
-        )
+        const wsPayload: { content: string; type: string; image?: string } = {
+          content: newMessage,
+          type: 'chat',
+        }
+        if (modalImage) {
+          wsPayload.image = modalImage
+        }
+        wsManager.websocket.send(JSON.stringify(wsPayload))
+
+        if (modalImage) {
+          homeStore.setState({ modalImage: '' })
+        }
       } else {
         toastStore.getState().addToast({
           message: i18next.t('NotConnectedToExternalAssistant'),
@@ -879,6 +991,17 @@ export const handleSendChatFn =
         homeStore.setState({ modalImage: '' })
       }
 
+      // ポーズ設定からモーションタグ情報をシステムプロンプトに追加
+      const poseConfigs = ss.poseConfigs
+      if (poseConfigs.length > 0) {
+        const motionIds = poseConfigs.map((p) => p.id).join(', ')
+        systemPrompt +=
+          '\n\nモーションタグを使うことで、キャラクターのポーズを制御できます。' +
+          `利用可能なモーション: ${motionIds}\n` +
+          '書式: [motion:モーション名]  例: [motion:think]\n' +
+          '感情タグと併用可能です。例: [happy][motion:cheer]やったー！'
+      }
+
       // IndexedDBから関連する過去の記憶を検索してsystemPromptに追加
       const memoryContext = await searchMemoryContext(newMessage)
       if (memoryContext) {
@@ -902,6 +1025,13 @@ export const handleSendChatFn =
         await processAIResponse(messages)
       } catch (e) {
         console.error(e)
+        // 思考中ポーズのリセット
+        if (ss.thinkingPoseEnabled && ss.modelType === 'vrm') {
+          const model = homeStore.getState().viewer.model
+          if (model?.poseManager.isActive) {
+            model.poseManager.resetToIdle(model)
+          }
+        }
         homeStore.setState({ chatProcessing: false })
       }
     }
@@ -916,7 +1046,8 @@ export const handleReceiveTextFromWsFn =
     text: string,
     role?: string,
     emotion: EmotionType = 'neutral',
-    type?: string
+    type?: string,
+    image?: string
   ) => {
     const sessionId = generateSessionId()
     if (text === null || role === undefined) return
@@ -947,18 +1078,39 @@ export const handleReceiveTextFromWsFn =
         // 既存のメッセージに追加（IDを維持）
         const lastMessage = hs.chatLog[hs.chatLog.length - 1]
         const lastContent =
-          typeof lastMessage.content === 'string' ? lastMessage.content : ''
+          typeof lastMessage.content === 'string'
+            ? lastMessage.content
+            : Array.isArray(lastMessage.content)
+              ? lastMessage.content[0].text
+              : ''
+
+        const appendedText = lastContent + text
+        const appendedContent: Message['content'] = Array.isArray(
+          lastMessage.content
+        )
+          ? [
+              { type: 'text' as const, text: appendedText },
+              lastMessage.content[1],
+            ]
+          : appendedText
 
         homeStore.getState().upsertMessage({
           id: lastMessage.id,
           role: role,
-          content: lastContent + text,
+          content: appendedContent,
         })
       } else {
         // 新しいメッセージを追加（新規IDを生成）
+        const messageContent: Message['content'] = image
+          ? [
+              { type: 'text' as const, text: text },
+              { type: 'image' as const, image: image },
+            ]
+          : text
+
         homeStore.getState().upsertMessage({
           role: role,
-          content: text,
+          content: messageContent,
         })
         wsManager?.setTextBlockStarted(true)
       }
