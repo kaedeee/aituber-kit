@@ -68,30 +68,29 @@ div {
   --color-base-dark: #332d2d;
 } */
 
-/* Default テーマ（画像イメージ × VTuberスタイル） */
+/* Default テーマ（ルーム背景 × VTuber：ミント壁・木・チャコールに馴染む） */
 :root {
-  /* メインカラー：画像より明るく透明感のある「サマーブルー」 */
-  --color-primary: #5eadff;
-  --color-primary-hover: #82c0ff;
-  --color-primary-press: #4a94e6;
-  --color-primary-disabled: rgba(94, 173, 255, 0.3);
+  /* メイン：額縁のくすんだ青＋ソファのスレート感を混ぜた「ダスティスレート」 */
+  --color-primary: #6b8494;
+  --color-primary-hover: #819bab;
+  --color-primary-press: #576b78;
+  --color-primary-disabled: rgba(107, 132, 148, 0.35);
 
-  /* セカンダリ：頬の赤みをより「いちごミルク」っぽく可愛くしたピンク */
-  --color-secondary: #ff99ac;
-  --color-secondary-hover: #ffb3c1;
-  --color-secondary-press: #e67e92;
-  --color-secondary-disabled: rgba(255, 153, 172, 0.3);
+  /* セカンダリ：棚の淡いピンク本を落とした「ダスティローズ」（派手なピンクは避ける） */
+  --color-secondary: #b8969a;
+  --color-secondary-hover: #c9a8ab;
+  --color-secondary-press: #9f7f84;
+  --color-secondary-disabled: rgba(184, 150, 154, 0.35);
 
-  /* テキストカラー：重すぎない「チャコールネイビー」で爽やかさを維持 */
-
-  --color-text-primary: #3a5470;
+  /* テキスト：壁のミントと木のあいだの、暖みのあるチャコール */
+  --color-text-primary: #3d4542;
   --color-text-base: #ffffff;
-  --color-text-default: #333333;
+  --color-text-default: #3a403d;
 
-  /* 背景色：真っ白ではなく、わずかに青みを感じる「スノーホワイト」 */
-  --color-base-light: #f2fbff;
-  /* ダークトーン：深海の底のような、透明感のあるダークブルー */
-  --color-base-dark: #1a2a3a;
+  /* 背景：青白ではなく、壁のペールミントに寄せたミスト */
+  --color-base-light: #eef3f0;
+  /* ダーク：ソファのチャコールに近い、青みを抑えた深灰 */
+  --color-base-dark: #2a302e;
 }
 
 /* Cool テーマ（寒色） */
