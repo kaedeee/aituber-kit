@@ -82,3 +82,17 @@ public/pngtuber/*
 /reports
 
 .secretkey
+
+# Cloudflare
+.open-next
+.public-stash
+
+aituber-kit-lp/*
+aituber-kit-docs/*
+promo-video/*
+.claude/skills/remotion-*
+
+# Local caches
+.mypy_cache
+.swc
+.wrangler
