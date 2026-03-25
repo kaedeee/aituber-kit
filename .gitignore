@@ -61,6 +61,7 @@ public/scripts/live2dcubismcore.min.js
 !/public/vrm/nikechan_v1.vrm
 !/public/vrm/nikechan_v2.vrm
 !/public/vrm/nikechan_v2_outerwear.vrm
+!/public/vrm/yjsnpi.vrm
 
 # Background files
 /public/backgrounds/*
@@ -70,6 +71,7 @@ public/scripts/live2dcubismcore.min.js
 public/pngtuber/*
 !public/pngtuber/nike01
 !public/pngtuber/nike02
+!public/pngtuber/yjsnpi
 
 /public/images/uploaded/*
 !/public/images/placed/.keep
